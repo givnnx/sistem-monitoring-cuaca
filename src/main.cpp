@@ -6,10 +6,13 @@
 #include "FileSystemHandler.h"
 #include "WebServerHandler.h"
 #include "RaindropSensor.h"
+#include "lcd_i2c.h"
 
-#define DHTPIN D2
+#define DHTPIN D3
 #define DHTTYPE DHT22
-#define RAINDROP_PIN D3
+#define RAINDROP_PIN D4
+#define LCD_SDA_PIN D5
+#define LCD_SCL_PIN D6
 
 const char *ssid = "kamarku";
 const char *password = "unbanned";
@@ -21,6 +24,7 @@ WiFiConnector wifi(ssid, password, hostname);
 AsyncWebServer server(8080);
 WebSocketHandler wsHandler(server);
 WebServerHandler webServerHandler(server);
+lcd_i2c lcd(0x27, 16, 2, LCD_SDA_PIN, LCD_SCL_PIN);
 
 void setup()
 {
@@ -57,6 +61,14 @@ void setup()
 
   // Mulai server
   server.begin();
+
+  // Mulai LCD
+  lcd.begin();
+  lcd.setFirstln("LCD Initialized");
+  delay(1000);
+  lcd.setSecondln("Ready to go...");
+  delay(500);
+  lcd.clear();
 }
 
 void loop()
@@ -76,6 +88,10 @@ void loop()
       // Kirim data ke klien WebSocket
       String json = "{\"temperature\": " + String(temp) + ", \"humidity\": " + String(hum) + ", \"isRaining\": " + String(isRaining) + "}";
       wsHandler.sendToAll(json); // Mengirim data dalam format JSON
+
+      lcd.clear();
+      lcd.setFirstln(("Temperature: " + String(temp) + " °C").c_str());
+      lcd.setSecondln(("Humidity: " + String(hum) + " %").c_str());
     }
   }
 }
