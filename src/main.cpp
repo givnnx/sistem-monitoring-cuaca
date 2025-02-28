@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESPAsyncWebServer.h>
+#include <Wire.h>
 #include "DHTSensor.h"
 #include "WiFiConnector.h"
 #include "WebSocketHandler.h"
@@ -7,12 +8,11 @@
 #include "WebServerHandler.h"
 #include "RaindropSensor.h"
 #include "lcd_i2c.h"
+#include "BMP280Sensor.h"
 
 #define DHTPIN D3
 #define DHTTYPE DHT22
 #define RAINDROP_PIN D4
-#define LCD_SDA_PIN D5
-#define LCD_SCL_PIN D6
 
 const char *ssid = "kamarku";
 const char *password = "unbanned";
@@ -24,7 +24,8 @@ WiFiConnector wifi(ssid, password, hostname);
 AsyncWebServer server(8080);
 WebSocketHandler wsHandler(server);
 WebServerHandler webServerHandler(server);
-lcd_i2c lcd(0x27, 16, 2, LCD_SDA_PIN, LCD_SCL_PIN);
+lcd_i2c lcd(0x27, 16, 2);
+BMP280Sensor bmp;
 
 void setup()
 {
@@ -42,6 +43,8 @@ void setup()
 
   // Inisialisasi sensor DHT
   dhtSensor.begin();
+
+  Wire.begin();
 
   if (!LittleFS.begin())
   {
@@ -62,36 +65,60 @@ void setup()
   // Mulai server
   server.begin();
 
+  // Mulai BMP280 sensor
+  bmp.begin();
+
   // Mulai LCD
   lcd.begin();
-  lcd.setFirstln("LCD Initialized");
-  delay(1000);
-  lcd.setSecondln("Ready to go...");
-  delay(500);
-  lcd.clear();
+
+  Serial.println("Setup Completed");
 }
 
 void loop()
 {
   // Membaca data sensor setiap 2 detik
   static unsigned long lastRead = 0;
-  if (millis() - lastRead > 2000)
+  static unsigned long switchText = 0;
+  static bool toggle = false; // Variabel untuk berganti antara dua teks
+
+  if (millis() - lastRead > 2000) // Setiap 2 detik
   {
     lastRead = millis();
     float temp = dhtSensor.readTemperature();
     float hum = dhtSensor.readHumidity();
     bool isRaining = raindropSensor.isRaining();
+    float pressure = bmp.readPressure();
+    float altitude = bmp.readAltitude();
+
     if (!isnan(temp) && !isnan(hum))
     {
-      Serial.printf("Temperature: %.2f °C, Humidity: %.2f %%\n", temp, hum);
-
-      // Kirim data ke klien WebSocket
+      // Kirim data ke WebSocket
       String json = "{\"temperature\": " + String(temp) + ", \"humidity\": " + String(hum) + ", \"isRaining\": " + String(isRaining) + "}";
-      wsHandler.sendToAll(json); // Mengirim data dalam format JSON
+      wsHandler.sendToAll(json);
 
-      lcd.clear();
-      lcd.setFirstln(("Temperature: " + String(temp) + " °C").c_str());
-      lcd.setSecondln(("Humidity: " + String(hum) + " %").c_str());
+      // Update LCD pertama
+      lcd.setFirstln(("Temp: " + String(temp) + " °C").c_str());
+      lcd.setSecondln(("Humid: " + String(hum) + " %").c_str());
+
+      // Berganti teks tiap detik dalam 2 detik pembacaan
+      if (millis() - switchText > 1000) // Berganti tiap 1 detik
+      {
+        switchText = millis(); // reset waktu switchText
+
+        if (toggle)
+        {
+          lcd.setFirstln(("Pressure: " + String(pressure) + " hPa").c_str());
+          lcd.setSecondln(("Altitude: " + String(altitude) + " m").c_str());
+        }
+        else
+        {
+          lcd.clear();
+          lcd.setFirstln(("Temp: " + String(temp) + " °C").c_str());
+          lcd.setSecondln(("Humid: " + String(hum) + " %").c_str());
+        }
+
+        toggle = !toggle;
+      }
     }
   }
 }

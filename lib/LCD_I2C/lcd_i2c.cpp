@@ -1,12 +1,16 @@
 #include "lcd_i2c.h"
 
-lcd_i2c::lcd_i2c(uint8_t address, uint8_t cols, uint8_t rows, uint8_t SDA, uint8_t SCL) : _lcd(address, cols, rows), _SDA(SDA), _SCL(SCL) {}
+lcd_i2c::lcd_i2c(uint8_t address, uint8_t cols, uint8_t rows) : _lcd(address, cols, rows) {}
 
 void lcd_i2c::begin()
 {
     _lcd.begin(16, 2);
     _lcd.backlight();
-    Wire.begin(_SDA, _SCL);
+    setFirstln("LCD Initialized");
+    delay(1000);
+    setSecondln("Ready to go...");
+    delay(500);
+    clear();
 }
 
 void lcd_i2c::setFirstln(const char *text)
