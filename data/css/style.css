@@ -14,7 +14,7 @@ html {
 }
 
 body {
-  background-color: #f7f7f7;
+  background-color: #e0e0e0;
 }
 
 main {
@@ -47,7 +47,7 @@ main {
   margin: auto;
   width: fit-content;
   grid-template-columns: repeat(1, 1fr);
-  gap: 1rem;
+  gap: 2rem;
   border-radius: 16px;
   justify-content: center;
   justify-items: center;
@@ -78,11 +78,18 @@ label {
   font-weight: bold;
 }
 
-.card {
-  background-color: #ffffff;
+.slope {
   border-radius: 10px;
+  background: #e0e0e0;
+  box-shadow: inset 5px 5px 12px #c5c5c5, inset -5px -5px 12px #fbfbfb;
+  padding: 4px 0;
+}
+
+.card {
+  border-radius: 24px;
+  background: #e0e0e0;
+  box-shadow: 8px 8px 18px #c1c1c1, -8px -8px 18px #ffffff;
   padding: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   text-align: center;
   transition: transform 0.3s, box-shadow 0.3s;
 }
